@@ -9,9 +9,13 @@ class ParticipantsDB(db.Model):
     red_fighter = db.relationship('FightsDB', backref='red_fighter', foreign_keys="[FightsDB.red_fighter_id]")
     blue_fighter = db.relationship('FightsDB', backref='blue_fighter', foreign_keys="[FightsDB.blue_fighter_id]")
 
+class CompetitionsDB(db.Model):
+    competition_id = db.Column(db.Integer, primary_key=True)
+    fight = db.relationship('FightsDB', backref='fight')
 
 class FightsDB(db.Model):
     fight_id = db.Column(db.Integer, primary_key=True)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitionsDB.competition_id'))
     round_number = db.Column(db.Integer)
     red_fighter_id = db.Column(db.Integer, db.ForeignKey('participantsDB.participant_id'))
     blue_fighter_id = db.Column(db.Integer, db.ForeignKey('participantsDB.participant_id'))

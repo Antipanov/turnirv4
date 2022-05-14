@@ -40,11 +40,9 @@
 <script>
     $(document).ready(function() {
 
+      // Обработка нажатия красного бойца в ajax
       $(".red_fighter_div").click('.select_red_fighter_ajax', function(){
-        //var fight_id = $(this).data('id');
         var fight_id = $('.select_red_fighter_ajax').data('id');
-
-
 
 
         console.log("данные с кнопки ajax", fight_id)
@@ -65,7 +63,6 @@
                 $('.red_fighter_div').append(data.htmlresponsered);
                 $('.blue_fighter_div').html(data);
                 $('.blue_fighter_div').append(data.htmlresponseblue);
-
 
             }
           });

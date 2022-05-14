@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, flash, request, jsonify, redirect, url_for
 from sqlalchemy import desc
-from ..models.models import ParticipantsDB, FightsDB
+from ..models.models import ParticipantsDB, FightsDB, CompetitionsDB
 from ..extensions import db
 import csv
 
@@ -28,17 +28,18 @@ def fill_fighters():
     return "результат импорта - в принт"
 
 
-def fight_create_func(round_number):
-    round_number = int(round_number)
+def fight_create_func(competition_id, round_number):
+    competition_id = int(competition_id)
+    round_number = round_number
     # Список id активных бойцов
     active_fighters_id_data = db.session.query(ParticipantsDB.participant_id).filter_by(activity_status=1).all()
     active_fighters_id_list = [value for value, in active_fighters_id_data]
 
-    # Список красных бойцов, которые уже есть в текущем раунде
-    red_fighters_fights_data = db.session.query(FightsDB.red_fighter_id).filter_by(round_number=round_number).all()
+    # Список красных бойцов, которые уже есть в текущем раунде и текущем соревновании
+    red_fighters_fights_data = db.session.query(FightsDB.red_fighter_id).filter_by(round_number=round_number, competition_id=competition_id).all()
     red_fighters_id_list = [value for value, in red_fighters_fights_data]
     # Список синих бойцов, которые уже есть в текущем раунде
-    blue_fighters_fights_data = db.session.query(FightsDB.blue_fighter_id).filter_by(round_number=round_number).all()
+    blue_fighters_fights_data = db.session.query(FightsDB.blue_fighter_id).filter_by(round_number=round_number, competition_id=competition_id).all()
     blue_fighters_id_list = [value for value, in blue_fighters_fights_data]
     # список всех бойцов, которые уже есть в текущем раунде
     fighters_id_list = red_fighters_id_list + blue_fighters_id_list
@@ -48,7 +49,7 @@ def fight_create_func(round_number):
     if len(free_fighters_list) > 1:
         red_fighter_id = free_fighters_list[0]
         blue_fighter_id = free_fighters_list[1]
-        new_fight = FightsDB(round_number=round_number, red_fighter_id=red_fighter_id,
+        new_fight = FightsDB(competition_id=competition_id, round_number=round_number, red_fighter_id=red_fighter_id,
                              blue_fighter_id=blue_fighter_id)
         db.session.add(new_fight)
         try:
@@ -62,18 +63,41 @@ def fight_create_func(round_number):
         round_number = round_number + 1
     return round_number
 
-@home.route('/competition')
-def competition_start():
-  # создаем первый бой
-  fight_create_func(1)
-  # last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
-  return redirect(url_for('home.competition_view', round_no=1))
 
-@home.route('/competition/<int:round_no>')
-def competition_view(round_no):
-    round_number_prev = round_no
+@home.route('/competition_start/')
+def competition_start():
+    # создаем первый бой
+    # fight_create_func(1)
+    # last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
+    return render_template('competition_start.html')
+
+@home.route('/competition_create_new/')
+def competition_create_new():
+    #  создаем новое соревнование
+    new_competition = CompetitionsDB()
+    db.session.add(new_competition)
+    try:
+        db.session.commit()
+        created_competition_data = CompetitionsDB.query.order_by(desc(CompetitionsDB.competition_id)).first()
+        competition_id = created_competition_data.competition_id
+        # создаем первый бой в новом соревновании. В первом аргументе передаем соревнование, во втором аргументе передаем первый круг в соревновании
+        fight_create_func(competition_id, 1)
+        return redirect(url_for('home.competition_view', competition_id=competition_id))
+
+    except Exception as e:
+        print("Не удалось создать соревнование", e)
+        db.session.rollback()
+        return render_template('competition_start.html')
+
+
+
+
+
+@home.route('/competition/<int:competition_id>')
+def competition_view(competition_id):
+    competition_id = competition_id
     # round_number = fight_create_func(round_number_prev)
-    last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
+    last_created_fight = FightsDB.query.filter_by(competition_id=competition_id).order_by(desc(FightsDB.fight_id)).first()
     print("id последнего созданного боя", last_created_fight.fight_id)
     return render_template("competition.html", fight_data=last_created_fight)
 
@@ -81,23 +105,24 @@ def competition_view(round_no):
 @home.route('/ajaxfile_red_fighter', methods=["POST", "GET"])
 def ajaxfile_red_fighter():
     if request.method == 'POST':
-      fight_id = request.form['fight_id']
-      print("fight_id после нажатия", fight_id)
+        fight_id = request.form['fight_id']
+        print("fight_id после нажатия", fight_id)
 
-      # выводим из игры синего бойца
-      # current_fight_data = db.session.query(FightsDB).filter_by(fight_id=fight_id).all()[0]
-      # print("на удаление ", current_fight_data.blue_fighter.participant_last_name)
-      # current_fight_data.blue_fighter.activity_status = 0
-      # try:
-      #   db.session.commit()
-      # except Exception as e:
-      #   print("не удалось обновить статус проигравшего", e)
-      #   db.session.rollback()
-      # создаем новый бой 
-      fight_create_func(1)
-      last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
-      print("id последнего созданного боя", last_created_fight.fight_id)
+        # выводим из игры синего бойца
+        # current_fight_data = db.session.query(FightsDB).filter_by(fight_id=fight_id).all()[0]
+        # print("на удаление ", current_fight_data.blue_fighter.participant_last_name)
+        # current_fight_data.blue_fighter.activity_status = 0
+        # try:
+        #   db.session.commit()
+        # except Exception as e:
+        #   print("не удалось обновить статус проигравшего", e)
+        #   db.session.rollback()
+        # создаем новый бой
+        fight_create_func(1)
+        last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
+        print("id последнего созданного боя", last_created_fight.fight_id)
 
-      return jsonify({'htmlresponsered': render_template('response_red_fighter_div.html', fight_data=last_created_fight),
-                     'htmlresponseblue': render_template('response_blue_fighter_div.html', fight_data=last_created_fight)
-                     })
+        return jsonify(
+            {'htmlresponsered': render_template('response_red_fighter_div.html', fight_data=last_created_fight),
+             'htmlresponseblue': render_template('response_blue_fighter_div.html', fight_data=last_created_fight)
+             })
