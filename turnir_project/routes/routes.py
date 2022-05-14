@@ -101,13 +101,37 @@ def competition_view(competition_id):
     print("id последнего созданного боя", last_created_fight.fight_id)
     return render_template("competition.html", fight_data=last_created_fight)
 
+# ajaxfile_red_fighter_progress
+@home.route('/ajaxfile_red_fighter_progress', methods=["POST", "GET"])
+def ajaxfile_red_fighter_progress():
+    if request.method == 'POST':
+        fight_id = request.form['fight_id']
+        current_fight_data = FightsDB.query.filter_by(fight_id=fight_id).all()[0]
+        competition_id = current_fight_data.competition_id
+        current_round_number = current_fight_data.round_number
+        print("fight_id после нажатия в ajax", fight_id)
+        print("competition_id после нажатия в ajax", competition_id)
+        print("current_round_number после нажатия в ajax", current_round_number)
+        fight_create_func(competition_id, current_round_number)
+        last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
+        print("id последнего созданного боя", last_created_fight.fight_id)
+
+        return jsonify(
+            {'htmlresponsered': render_template('response_red_fighter_div.html', fight_data=last_created_fight),
+             'htmlresponseblue': render_template('response_blue_fighter_div.html', fight_data=last_created_fight)
+             })
+
 
 @home.route('/ajaxfile_red_fighter', methods=["POST", "GET"])
 def ajaxfile_red_fighter():
     if request.method == 'POST':
+        competition_id = request.form['competition_id']
         fight_id = request.form['fight_id']
+        current_fight_data = FightsDB.query.filter_by(fight_id=fight_id).all()[0]
+        current_round_number = current_fight_data.round_number
         print("fight_id после нажатия", fight_id)
-
+        print("competition_id после нажатия", competition_id)
+        print("current_round_number", current_round_number)
         # выводим из игры синего бойца
         # current_fight_data = db.session.query(FightsDB).filter_by(fight_id=fight_id).all()[0]
         # print("на удаление ", current_fight_data.blue_fighter.participant_last_name)
@@ -118,7 +142,7 @@ def ajaxfile_red_fighter():
         #   print("не удалось обновить статус проигравшего", e)
         #   db.session.rollback()
         # создаем новый бой
-        fight_create_func(1)
+        fight_create_func(competition_id, current_round_number)
         last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
         print("id последнего созданного боя", last_created_fight.fight_id)
 

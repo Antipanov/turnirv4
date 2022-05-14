@@ -41,31 +41,45 @@
     $(document).ready(function() {
 
       // Обработка нажатия красного бойца в ajax
+      // Из ajax мы можем получить только fight_id здесь нет вообще никаких данных из БД. Поэтому получив данные из Бд уходим сразу на раут с обработкой этого fight_id
       $(".red_fighter_div").click('.select_red_fighter_ajax', function(){
         var fight_id = $('.select_red_fighter_ajax').data('id');
-
-
         console.log("данные с кнопки ajax", fight_id)
+        $.ajax({
+        url: '/ajaxfile_red_fighter_progress',
+        type: 'post',
+        data: {fight_id:fight_id},
+        success: function(data){
+            $('.red_fighter_div').html(data);
+            $('.red_fighter_div').append(data.htmlresponsered);
+            $('.blue_fighter_div').html(data);
+            $('.blue_fighter_div').append(data.htmlresponseblue);
+
+          }
+        });
+
        });
 
       $('.select_red_fighter').click(function(){
-            var fight_id = $(this).data('id');
-            var round_number = {{ fight_data.round_number }}
-            //var fight_id =  {{ fight_data.fight_id }}
+        var competition_id = {{fight_data.competition_id}}
+        var fight_id = $(this).data('id');
 
-            console.log("fight_id после нажатия", {{fight_data.fight_id}})
-            $.ajax({
-            url: '/ajaxfile_red_fighter',
-            type: 'post',
-            data: {fight_id:fight_id, round_number: round_number},
-            success: function(data){
-                $('.red_fighter_div').html(data);
-                $('.red_fighter_div').append(data.htmlresponsered);
-                $('.blue_fighter_div').html(data);
-                $('.blue_fighter_div').append(data.htmlresponseblue);
+        //var round_number = {{ fight_data.round_number }}
+        //var fight_id =  {{ fight_data.fight_id }}
 
-            }
-          });
+        console.log("fight_id после нажатия", {{fight_data.fight_id}})
+        $.ajax({
+        url: '/ajaxfile_red_fighter',
+        type: 'post',
+        data: {competition_id:competition_id, fight_id:fight_id},
+        success: function(data){
+            $('.red_fighter_div').html(data);
+            $('.red_fighter_div').append(data.htmlresponsered);
+            $('.blue_fighter_div').html(data);
+            $('.blue_fighter_div').append(data.htmlresponseblue);
+
+          }
+        });
         });
         $('.select_blue_fighter').click(function(){
             var blue_fighter_id = $(this).data('id');
