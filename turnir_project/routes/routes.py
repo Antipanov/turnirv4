@@ -63,20 +63,19 @@ def fight_create_func(round_number):
     return round_number
 
 @home.route('/competition')
-def competition_start(round_no):
+def competition_start():
   # создаем первый бой
   fight_create_func(1)
-  last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
-  return redirect(url_for('home.competitions_view', round_no=1))
+  # last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
+  return redirect(url_for('home.competition_view', round_no=1))
 
 @home.route('/competition/<int:round_no>')
 def competition_view(round_no):
     round_number_prev = round_no
-    round_number = fight_create_func(round_number_prev)
+    # round_number = fight_create_func(round_number_prev)
     last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
     print("id последнего созданного боя", last_created_fight.fight_id)
-    print("round_no ", )
-    return render_template("competition.html", round_no=round_number, fight_data=last_created_fight)
+    return render_template("competition.html", fight_data=last_created_fight)
 
 
 @home.route('/ajaxfile_red_fighter', methods=["POST", "GET"])
@@ -84,10 +83,7 @@ def ajaxfile_red_fighter():
     if request.method == 'POST':
       fight_id = request.form['fight_id']
       print("fight_id после нажатия", fight_id)
-      round_number = request.form['round_number']
-        
-      
-    
+
       # выводим из игры синего бойца
       # current_fight_data = db.session.query(FightsDB).filter_by(fight_id=fight_id).all()[0]
       # print("на удаление ", current_fight_data.blue_fighter.participant_last_name)
@@ -98,7 +94,7 @@ def ajaxfile_red_fighter():
       #   print("не удалось обновить статус проигравшего", e)
       #   db.session.rollback()
       # создаем новый бой 
-      fight_create_func(round_number)  
+      fight_create_func(1)
       last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
       print("id последнего созданного боя", last_created_fight.fight_id)
 

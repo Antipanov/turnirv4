@@ -12,7 +12,7 @@
       <div class="red_fighter_div">
       {{fight_data.red_fighter.participant_first_name}} {{fight_data.red_fighter.participant_last_name}}
         <p></p>
-        <button data-id='{{fight_data.red_fighter_id}}' type="button" class="select_red_fighter btn btn-primary">Выбрать</button>
+        <button data-id='{{fight_data.fight_id}}' type="button" class="select_red_fighter btn btn-primary">Выбрать</button>
       </div>  
       <p></p>
 
@@ -40,11 +40,14 @@
 <script>
     $(document).ready(function() {
 
-      $(".red_fighter_div").click('.select_red_fighter', function(){
-        var fight_id = $(this).data('id');
+      $(".red_fighter_div").click('.select_red_fighter_ajax', function(){
+        //var fight_id = $(this).data('id');
+        var fight_id = $('.select_red_fighter_ajax').data('id');
 
 
-         console.log(fight_id)
+
+
+        console.log("данные с кнопки ajax", fight_id)
        });
 
       $('.select_red_fighter').click(function(){
