@@ -11,9 +11,11 @@
     <div class="col">
       <div class="red_fighter_div">
       {{fight_data.red_fighter.participant_first_name}} {{fight_data.red_fighter.participant_last_name}}
+        <p></p>
+        <button data-id='{{fight_data.red_fighter_id}}' type="button" class="select_red_fighter btn btn-primary">Выбрать</button>
       </div>  
       <p></p>
-      <button data-id='{{fight_data.red_fighter_id}}' type="button" class="select_red_fighter btn btn-primary">Выбрать</button>
+
     </div>
     <div class="col">
       <div class="blue_fighter_div">
@@ -37,11 +39,19 @@
 
 <script>
     $(document).ready(function() {
-        $('.select_red_fighter').click(function(){
+
+      $(".red_fighter_div").click('.select_red_fighter', function(){
+        var fight_id = $(this).data('id');
+
+
+         console.log(fight_id)
+       });
+
+      $('.select_red_fighter').click(function(){
             var fight_id = $(this).data('id');
             var round_number = {{ fight_data.round_number }}
             //var fight_id =  {{ fight_data.fight_id }}
-            
+
             console.log("fight_id после нажатия", {{fight_data.fight_id}})
             $.ajax({
             url: '/ajaxfile_red_fighter',
@@ -52,8 +62,8 @@
                 $('.red_fighter_div').append(data.htmlresponsered);
                 $('.blue_fighter_div').html(data);
                 $('.blue_fighter_div').append(data.htmlresponseblue);
-              
-                
+
+
             }
           });
         });
