@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, flash, request, jsonify, redirect, url_for
+from flask import Blueprint, render_template, flash, request, jsonify, redirect, url_for, abort
 from sqlalchemy import desc
 from ..models.models import ParticipantsDB, FightsDB, CompetitionsDB, BacklogDB
 from ..extensions import db
@@ -32,7 +32,8 @@ def fight_create_func(competition_id, round_number):
     competition_id = int(competition_id)
     round_number = round_number
     # Список id активных бойцов
-    active_fighters_id_data = db.session.query(ParticipantsDB.participant_id).filter_by(activity_status=1).all()
+    # active_fighters_id_data = db.session.query(ParticipantsDB.participant_id).filter_by(activity_status=1).all()
+    active_fighters_id_data = db.session.query(BacklogDB.fighter_id).all()
     active_fighters_id_list = [value for value, in active_fighters_id_data]
 
     # Список красных бойцов, которые уже есть в текущем раунде и текущем соревновании
@@ -52,10 +53,24 @@ def fight_create_func(competition_id, round_number):
         new_fight = FightsDB(competition_id=competition_id, round_number=round_number, red_fighter_id=red_fighter_id,
                              blue_fighter_id=blue_fighter_id)
         db.session.add(new_fight)
+        print("создан новый бой в круге №", round_number, ". id бойцов:", red_fighter_id, " и ", blue_fighter_id)
+
+        # удаляем записи из бэклога бойцов, которые зашли в бой
+        backlog_record_to_delete_red = BacklogDB.query.get(red_fighter_id)
+        if backlog_record_to_delete_red is None:
+            abort(404, description="No backlog record was Found with the given ID")
+        else:
+            db.session.delete(backlog_record_to_delete_red)
+
+        backlog_record_to_delete_blue = BacklogDB.query.get(blue_fighter_id)
+        if backlog_record_to_delete_blue is None:
+            abort(404, description="No backlog record was Found with the given ID")
+        else:
+            db.session.delete(backlog_record_to_delete_blue)
         try:
             db.session.commit()
 
-            print("создан новый бой в круге №", round_number, ". id бойцов:", red_fighter_id, " и ", blue_fighter_id)
+
         except Exception as e:
             print("не получилось создать новый бой. Ошибка:  ", e)
             db.session.rollback()
@@ -81,8 +96,6 @@ def competition_create_new():
         db.session.commit()
         created_competition_data = CompetitionsDB.query.order_by(desc(CompetitionsDB.competition_id)).first()
         competition_id = created_competition_data.competition_id
-        # создаем первый бой в новом соревновании. В первом аргументе передаем соревнование, во втором аргументе передаем первый круг в соревновании
-        fight_create_func(competition_id, 1)
         # помещаем всех бойцов в бэклог
         participants_data = ParticipantsDB.query.all()
 
@@ -95,6 +108,10 @@ def competition_create_new():
             except Exception as e:
                 print("Не удалось создать запись в бэклоге", e)
                 db.session.rollback()
+
+        # создаем первый бой в новом соревновании. В первом аргументе передаем соревнование, во втором аргументе передаем первый круг в соревновании
+        fight_create_func(competition_id, 1)
+
 
         return redirect(url_for('home.competition_view', competition_id=competition_id))
 
