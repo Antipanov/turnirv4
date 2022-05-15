@@ -11,7 +11,8 @@ class ParticipantsDB(db.Model):
 
 class CompetitionsDB(db.Model):
     competition_id = db.Column(db.Integer, primary_key=True)
-    fight = db.relationship('FightsDB', backref='fight')
+    fights = db.relationship('FightsDB', backref='competition')
+
 
 class FightsDB(db.Model):
     fight_id = db.Column(db.Integer, primary_key=True)
@@ -20,3 +21,11 @@ class FightsDB(db.Model):
     red_fighter_id = db.Column(db.Integer, db.ForeignKey('participantsDB.participant_id'))
     blue_fighter_id = db.Column(db.Integer, db.ForeignKey('participantsDB.participant_id'))
     fight_winner_id = db.Column(db.Integer, default=0)
+
+class BacklogDB(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    fighter_id = db.Column(db.Integer, db.ForeignKey('participantsDB.participant_id'))
+    competition_id = db.Column(db.Integer, db.ForeignKey('competitionsDB.competition_id'))
+    round_number = db.Column(db.Integer)
+
+

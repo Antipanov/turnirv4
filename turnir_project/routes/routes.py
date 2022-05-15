@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, flash, request, jsonify, redirect, url_for
 from sqlalchemy import desc
-from ..models.models import ParticipantsDB, FightsDB, CompetitionsDB
+from ..models.models import ParticipantsDB, FightsDB, CompetitionsDB, BacklogDB
 from ..extensions import db
 import csv
 
@@ -9,7 +9,7 @@ home = Blueprint('home', __name__, template_folder='templates')
 
 @home.route('/')
 def home_view():
-    return render_template("home.html")
+    return redirect(url_for('home.competition_start'))
 
 
 @home.route('/fill_fighters')
@@ -76,12 +76,26 @@ def competition_create_new():
     #  создаем новое соревнование
     new_competition = CompetitionsDB()
     db.session.add(new_competition)
+
     try:
         db.session.commit()
         created_competition_data = CompetitionsDB.query.order_by(desc(CompetitionsDB.competition_id)).first()
         competition_id = created_competition_data.competition_id
         # создаем первый бой в новом соревновании. В первом аргументе передаем соревнование, во втором аргументе передаем первый круг в соревновании
         fight_create_func(competition_id, 1)
+        # помещаем всех бойцов в бэклог
+        participants_data = ParticipantsDB.query.all()
+
+        for participant in participants_data:
+            participant_id = participant.participant_id
+            new_backlog_record = BacklogDB(fighter_id=participant_id, competition_id=competition_id, round_number=1)
+            db.session.add(new_backlog_record)
+            try:
+                db.session.commit()
+            except Exception as e:
+                print("Не удалось создать запись в бэклоге", e)
+                db.session.rollback()
+
         return redirect(url_for('home.competition_view', competition_id=competition_id))
 
     except Exception as e:
@@ -133,14 +147,13 @@ def ajaxfile_red_fighter():
         print("competition_id после нажатия", competition_id)
         print("current_round_number", current_round_number)
         # выводим из игры синего бойца
-        # current_fight_data = db.session.query(FightsDB).filter_by(fight_id=fight_id).all()[0]
-        # print("на удаление ", current_fight_data.blue_fighter.participant_last_name)
-        # current_fight_data.blue_fighter.activity_status = 0
-        # try:
-        #   db.session.commit()
-        # except Exception as e:
-        #   print("не удалось обновить статус проигравшего", e)
-        #   db.session.rollback()
+        print("на удаление ", current_fight_data.blue_fighter.participant_last_name)
+        current_fight_data.blue_fighter.activity_status = 0
+        try:
+          db.session.commit()
+        except Exception as e:
+          print("не удалось обновить статус проигравшего", e)
+          db.session.rollback()
         # создаем новый бой
         fight_create_func(competition_id, current_round_number)
         last_created_fight = FightsDB.query.order_by(desc(FightsDB.fight_id)).first()
